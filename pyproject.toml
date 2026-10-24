@@ -1,0 +1,4 @@
+[tool.vercel.scripts]
+# Use Neon's direct connection for schema changes when available. The app uses
+# DATABASE_URL at runtime, which may be a pooled connection.
+build = 'if [ -n "$DATABASE_URL_UNPOOLED" ]; then DATABASE_URL="$DATABASE_URL_UNPOOLED" python manage.py migrate --noinput; else python manage.py migrate --noinput; fi'
