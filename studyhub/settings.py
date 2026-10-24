@@ -87,7 +87,13 @@ WSGI_APPLICATION = "studyhub.wsgi.application"
 # Vercel functions have an ephemeral, read-only deployment filesystem.  SQLite
 # remains convenient for local development, while a provisioned Postgres
 # database is selected automatically in Vercel through DATABASE_URL.
-DATABASE_URL = os.environ.get("DATABASE_URL")
+# Marketplace providers normally expose DATABASE_URL for the application and
+# DATABASE_URL_UNPOOLED for migrations. Accept the latter as a fallback so a
+# connected provider with only the direct URL still never falls back to SQLite
+# on Vercel.
+DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get(
+    "DATABASE_URL_UNPOOLED"
+)
 
 if DATABASE_URL:
     import dj_database_url
