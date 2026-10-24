@@ -1,3 +1,20 @@
+[project]
+name = "studyhub"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "Django==6.0.1",
+    "djangorestframework==3.17.1",
+    "dj-database-url>=3.0,<4.0",
+    "Pillow==12.0.0",
+    "psycopg[binary]>=3.2,<4.0",
+    "pypdf==6.16.2",
+    "python-docx==1.2.0",
+    "python-dotenv==1.1.0",
+    "pywin32==311; platform_system == 'Windows'",
+    "requests==2.32.5",
+]
+
 [tool.vercel.scripts]
 # Use Neon's direct connection for schema changes when available. The app uses
 # DATABASE_URL at runtime, which may be a pooled connection.
