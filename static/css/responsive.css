@@ -1,0 +1,864 @@
+/* ==========================================================================
+   StudyHub — responsive / mobile layer
+   --------------------------------------------------------------------------
+   Loaded after style.css, so it can refine the responsive rules there without
+   duplicating the whole design. Desktop styles are untouched; the rules below
+   target tablet (<=1100), nav (<=900), phone (<=768), small phone (<=520) and
+   very small / landscape devices.
+
+   Goals:
+   • nothing is wider than the viewport at 280–430px
+   • drawers and menus stay usable with touch and safe-area insets
+   • form controls are 16px so iOS does not zoom on focus
+   • long user-supplied names wrap instead of pushing the page sideways
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Fluid safety — applies at every width
+   -------------------------------------------------------------------------- */
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+/* User-supplied names/titles are unbounded; let them break rather than widen
+   the page. `anywhere` also lowers the min-content width of flex/grid items. */
+.subject-card h3,
+.topic-name,
+.topic-head h3,
+.material-title-link,
+.material-list a,
+.share-group-head strong,
+.share-main,
+.topic-option strong,
+.profile-meta strong,
+.lock-title,
+.viewer-header h1,
+.viewer-topic h2,
+.page-head h1,
+.auth-card h1,
+.alert,
+.empty-state,
+.instant-toast,
+.cmdk-ai-msg {
+  overflow-wrap: anywhere;
+}
+
+.topic-head h3,
+.material-list li,
+.material-list li > a,
+.topic-option .muted {
+  min-width: 0;
+}
+
+/* Shared document rows: allow the ellipsis/shrink to work on tiny screens. */
+.doc-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.topic-option {
+  flex-wrap: wrap;
+}
+
+/* Grids whose column minimum could exceed the available width on 280–320px
+   phones (the `min(…, 100%)` keeps a single, non-overflowing column). */
+.subjects-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+.features {
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+
+.doc-options,
+.topic-docs {
+  grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
+}
+
+.combine-fields {
+  min-width: 0;
+}
+
+/* Jumping to a focused field shouldn't hide it behind the fixed navbar. */
+input,
+select,
+textarea {
+  scroll-margin-top: calc(var(--nav-h) + 1rem);
+}
+
+/* --------------------------------------------------------------------------
+   2. Tablet — drawers replace fixed sidebars, reopen pill only when closed
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+  .shared-sidebar {
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    /* style.css's mobile `.card` padding would otherwise override the 4.5rem
+       top inset that keeps the Sections toggle below the fixed navbar. */
+    padding: 4.5rem 1rem max(1rem, env(safe-area-inset-bottom));
+    overscroll-behavior: contain;
+  }
+
+  .viewer-toc {
+    overscroll-behavior: contain;
+  }
+
+  /* The pill is the "closed" affordance — it must not sit on top of the open
+     drawer (the drawer has its own Sections toggle). */
+  .shared-sidebar-reopen {
+    display: none !important;
+    position: fixed;
+    top: calc(var(--nav-h) + 0.55rem);
+    left: max(0.7rem, env(safe-area-inset-left));
+    z-index: 31;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 44px;
+    padding: 0 0.85rem;
+  }
+
+  body.shared-sidebar-collapsed .shared-sidebar-reopen {
+    display: inline-flex !important;
+  }
+
+  /* Reserve room for the fixed reopen pill only while the drawer is closed. */
+  body.shared-page.shared-sidebar-collapsed .container {
+    padding-top: 3.95rem;
+  }
+
+  /* Dim the page behind the open filters drawer; the backdrop closes it. */
+  .shared-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: var(--nav-h) 0 0;
+    z-index: 29;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: color-mix(in srgb, #000 46%, transparent);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    cursor: pointer;
+  }
+
+  body.shared-page:not(.shared-sidebar-collapsed) .shared-sidebar-backdrop {
+    display: block;
+  }
+
+  /* Keep the page from scrolling underneath the open drawer. The class is set
+     by shared_lists.js only while the drawer is open, so a no-JS fallback
+     still scrolls. */
+  body.shared-sidebar-drawer-open {
+    overflow: hidden;
+  }
+
+  /* The floating selection bar would otherwise sit on top of the open filters
+     drawer; hide it until the drawer closes. */
+  body.shared-sidebar-drawer-open .shared-selection-bar {
+    display: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. Navigation — compact search on tablets, hamburger menu on phones
+   -------------------------------------------------------------------------- */
+
+/* Between 901px and ~950px the full desktop navbar (brand + wide search +
+   links + theme switch) is wider than the viewport. Collapse just the search
+   field to its icon so every link stays available. */
+@media (max-width: 960px) {
+  .nav-inner .nav-search {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 11px;
+  }
+
+  .nav-search-label,
+  .nav-search kbd {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .nav-inner {
+    gap: 0.4rem;
+    padding-left: max(0.85rem, env(safe-area-inset-left));
+    padding-right: max(0.85rem, env(safe-area-inset-right));
+  }
+
+  /* Let the brand shrink instead of forcing the action cluster off-screen. */
+  .nav-inner .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-inner .nav-search {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 11px;
+  }
+
+  .nav-select-toggle {
+    height: 44px;
+    min-height: 44px;
+    padding: 0 0.65rem;
+  }
+
+  .nav-menu-toggle {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    flex: 0 0 auto;
+  }
+
+  .nav-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .nav-inner .nav-links {
+    max-height: calc(100vh - var(--nav-h) - 0.6rem);
+    max-height: calc(100dvh - var(--nav-h) - 0.6rem);
+    /* Solid (not translucent) so page headings cannot ghost through the
+       dropdown on small screens. */
+    background: var(--bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .nav-profile-link,
+  .nav-profile-name {
+    min-width: 0;
+  }
+
+  .nav-profile-name {
+    max-width: 14ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-links > a:not(.btn):not(.nav-avatar),
+  .nav-links > .btn {
+    min-height: 44px;
+  }
+
+  .nav-theme-row {
+    padding-bottom: 0.5rem;
+  }
+
+  .theme-opt {
+    width: 42px;
+    height: 38px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. Phone — 768 and below
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  .page-viewport,
+  .page-sheet {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .container {
+    padding-left: max(0.85rem, env(safe-area-inset-left));
+    padding-right: max(0.85rem, env(safe-area-inset-right));
+    padding-bottom: calc(1.4rem + env(safe-area-inset-bottom));
+  }
+
+  .footer {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-bottom: calc(1.4rem + env(safe-area-inset-bottom));
+  }
+
+  .hero h1 {
+    font-size: clamp(1.7rem, 8vw, 1.9rem);
+    line-height: 1.16;
+  }
+
+  .hero .lead {
+    font-size: 0.96rem;
+    line-height: 1.6;
+  }
+
+  .features {
+    margin-top: 1.8rem;
+    padding-top: 1.8rem;
+  }
+
+  .dashboard-header {
+    margin-bottom: 1.3rem;
+  }
+
+  .dashboard-header h1,
+  .page-head h1 {
+    font-size: clamp(1.5rem, 5.4vw, 1.75rem);
+  }
+
+  .subjects-grid {
+    gap: 0.8rem;
+  }
+
+  .subject-card {
+    padding: 1rem;
+  }
+
+  /* The selection checkbox sits in the card's top-right corner; keep the
+     title and meta text from running underneath it. */
+  body.selection-mode .subject-card {
+    padding-right: 2.75rem;
+  }
+
+  .panel-header h2 {
+    font-size: 1.35rem;
+  }
+
+  /* ── Topic card toolbar ─────────────────────────────────────────────── */
+  .topic-head {
+    row-gap: 0.5rem;
+  }
+
+  .topic-head .topic-viewer,
+  .topic-head .topic-count {
+    flex-shrink: 0;
+  }
+
+  /* ── Viewer ─────────────────────────────────────────────────────────── */
+  .viewer-main {
+    padding-left: max(0.7rem, env(safe-area-inset-left));
+    padding-right: max(0.7rem, env(safe-area-inset-right));
+    padding-bottom: calc(2.2rem + env(safe-area-inset-bottom));
+  }
+
+  .viewer-header h1 {
+    font-size: clamp(1.35rem, 5vw, 1.85rem);
+    line-height: 1.25;
+  }
+
+  .viewer-topic h2 {
+    font-size: 1.2rem;
+    line-height: 1.3;
+  }
+
+  .material-head h3 {
+    font-size: 1.02rem;
+  }
+
+  .material-actions {
+    gap: 0.4rem;
+  }
+
+  .viewer-toc {
+    width: min(310px, 88vw);
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+
+  .viewer-toc-toggle {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .sidebar-toggle,
+  .cmdk-item {
+    min-height: 44px;
+  }
+
+  .viewer-toc-reopen,
+  .shared-sidebar-reopen {
+    top: calc(var(--nav-h) + 0.55rem);
+    left: max(0.7rem, env(safe-area-inset-left));
+  }
+
+  .pdf-frame {
+    height: 62vh;
+    height: 60dvh;
+    min-height: 240px;
+  }
+
+  .docx-viewer,
+  .txt-viewer {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Shared page ────────────────────────────────────────────────────── */
+  .shared-main-content {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .shared-sidebar {
+    width: min(290px, 88vw);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .shared-selection-bar {
+    bottom: max(0.9rem, env(safe-area-inset-bottom));
+  }
+
+  .share-group-head {
+    align-items: flex-start;
+  }
+
+  .share-group-head .btn {
+    margin-left: 0;
+  }
+
+  /* ── Forms & cards ──────────────────────────────────────────────────── */
+  .share-card,
+  .lock-card--styled {
+    padding: 1.4rem 1.1rem;
+  }
+
+  .auth-card {
+    padding: 1.4rem 1rem;
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  .form-row input[type="file"] {
+    width: 100%;
+  }
+
+  /* Comfortable tap targets for the small in-page links and chip input. */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .chip-box input[type="text"] {
+    min-height: 44px;
+  }
+
+  /* In a column, the sharing form's `flex: 1 1 200px` password fields would
+     stretch to 200px tall. Reset direct form-row children to natural height. */
+  .form-row > input,
+  .form-row > select,
+  .form-row > textarea,
+  .form-row > .password-field,
+  .form-row .password-field,
+  .share-card .form-row .password-field,
+  .form-row > input[type="password"],
+  .share-card .form-row input[type="password"] {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .profile-form input,
+  .lock-form input,
+  .access-search {
+    min-height: 44px;
+  }
+
+  /* 16px prevents the iOS Safari focus-zoom on every text field. */
+  .container input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  .container select,
+  .container textarea,
+  .cmdk-input-row input {
+    font-size: 16px;
+  }
+
+  #rename-class-input {
+    font-size: 16px;
+  }
+
+  .password-toggle {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .lock-card--styled .lock-title {
+    font-size: 1.3rem;
+  }
+
+  .modal-backdrop {
+    padding: 1rem;
+  }
+
+  .modal-box {
+    max-width: 100%;
+  }
+
+  .modal-actions .btn {
+    flex: 1 1 0;
+  }
+
+  /* Keyboard-only hints are not useful on touch; give the results more room. */
+  .cmdk-hints {
+    display: none;
+  }
+
+  .cmdk {
+    max-height: 86vh;
+    max-height: 86dvh;
+  }
+
+  .cmdk-backdrop {
+    padding-top: max(3vh, env(safe-area-inset-top));
+  }
+
+  .instant-toast {
+    max-width: calc(100vw - 2rem);
+    text-align: center;
+  }
+
+  .theme-opt {
+    width: 42px;
+    height: 38px;
+  }
+
+  /* ── AI drawer ──────────────────────────────────────────────────────── */
+  .ai-drawer {
+    width: min(420px, 100vw);
+  }
+
+  .ai-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .ai-input-row {
+    padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Small phones — 520 and below
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 520px) {
+  /* Sidebar reopen pills become compact, icon-sized controls. */
+  .viewer-toc-reopen,
+  .shared-sidebar-reopen {
+    padding: 0 0.7rem;
+    font-size: 0.82rem;
+  }
+
+  /* Dashboard header stacks so the primary action stays easy to reach. */
+  .dashboard-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-header .btn {
+    width: 100%;
+  }
+
+  /* Topic card: title on the first row, actions on the second. This prevents
+     long topic names from squeezing the viewer button off-screen. */
+  .topic-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.5rem;
+    row-gap: 0.45rem;
+  }
+
+  .topic-head .bubble-topic-check {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .topic-head h3 {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .topic-head .topic-count {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin-left: 0;
+  }
+
+  .topic-head .topic-viewer {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    margin-left: 0;
+    width: auto;
+  }
+
+  .topic-head .topic-settings {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
+  }
+
+  /* Subject rename: stack fields and give the buttons equal width. */
+  .rename-row {
+    display: block;
+  }
+
+  #rename-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  #rename-form #rename-input,
+  #rename-form #rename-class-input {
+    width: 100%;
+  }
+
+  #rename-form .btn {
+    flex: 1 1 0;
+  }
+
+  /* Buttons stack in narrow form actions (share, etc.). */
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+  }
+
+  .shared-selection-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+
+  .shared-selection-actions {
+    justify-content: flex-start;
+  }
+
+  .shared-selection-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .shared-tab-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .see-more-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .share-card h1 {
+    font-size: 1.3rem;
+  }
+
+  .lock-card--styled {
+    padding: 1.5rem 1rem;
+  }
+
+  .lock-icon-wrap {
+    width: 64px;
+    height: 64px;
+  }
+
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-actions .btn {
+    flex: 1 1 8rem;
+  }
+
+  .viewer-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .material-title-link,
+  .material-head h3 {
+    overflow-wrap: anywhere;
+  }
+
+  .pdf-frame {
+    height: 55vh;
+    height: 55dvh;
+    min-height: 220px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. Very small phones — 380 and below
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 380px) {
+  .nav-inner {
+    gap: 0.3rem;
+    padding-left: max(0.7rem, env(safe-area-inset-left));
+    padding-right: max(0.7rem, env(safe-area-inset-right));
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+
+  /* Icon-only Select control; the button keeps its accessible label. */
+  .nav-select-label {
+    display: none;
+  }
+
+  .nav-select-toggle {
+    width: 44px;
+    min-width: 44px;
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+  }
+
+  .container {
+    padding-left: max(0.7rem, env(safe-area-inset-left));
+    padding-right: max(0.7rem, env(safe-area-inset-right));
+  }
+
+  .hero h1 {
+    font-size: 1.55rem;
+  }
+
+  .features {
+    gap: 0.7rem;
+  }
+
+  .feature-card {
+    padding: 1rem 0.85rem;
+  }
+
+  .subject-card {
+    padding: 0.9rem;
+  }
+
+  .card {
+    border-radius: 12px;
+  }
+
+  .viewer-main {
+    padding-left: max(0.6rem, env(safe-area-inset-left));
+    padding-right: max(0.6rem, env(safe-area-inset-right));
+  }
+
+  .topic-head {
+    column-gap: 0.4rem;
+  }
+
+  .topic-head .topic-count {
+    font-size: 0.72rem;
+  }
+
+  .share-main {
+    gap: 0.4rem;
+  }
+
+  .lock-title {
+    font-size: 1.15rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. Landscape phones / short viewports
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) and (max-height: 520px) {
+  .nav-inner .nav-links {
+    max-height: calc(100vh - var(--nav-h) - 0.5rem);
+    max-height: calc(100dvh - var(--nav-h) - 0.5rem);
+  }
+
+  .hero {
+    padding-top: 1.1rem;
+    padding-bottom: 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .pdf-frame {
+    height: 72vh;
+    height: 72dvh;
+    min-height: 200px;
+  }
+
+  .cmdk {
+    max-height: 92vh;
+    max-height: 92dvh;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. Touch devices — drop hover-only motion that can stick after a tap
+   -------------------------------------------------------------------------- */
+
+@media (hover: none) {
+  .subject-card:hover {
+    transform: none;
+  }
+
+  .material-list li:hover {
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .viewer-toc ol > li:hover {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .toc-docs li:hover {
+    background: transparent;
+  }
+
+  .nav-links > a:not(.btn):not(.nav-avatar):hover {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Let taps respond immediately rather than waiting for a double-tap zoom.
+   Text links keep their double-tap zoom behaviour. */
+button,
+summary,
+label,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Dark theme's initials tile is white, so white initials disappeared. */
+[data-theme="dark"] .avatar-initials,
+[data-theme="dark"] .avatar-initials-lg {
+  color: var(--bg) !important;
+}

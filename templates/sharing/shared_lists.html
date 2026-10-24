@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body_class %}shared-page{% endblock %}
+{% block title %}Shared — StudyHub{% endblock %}
+{% block content %}
+<script>
+  // Apply the remembered filters-sidebar state before first paint so the
+  // layout doesn't visibly shift while the page settles in.
+  (function () {
+    try {
+      var stored = localStorage.getItem("studyhub:shared-sidebar-collapsed");
+      if (window.innerWidth <= 1100 || stored === "true") {
+        document.body.classList.add("shared-sidebar-collapsed");
+      }
+    } catch (e) {}
+    document.documentElement.classList.add("sidebar-preload");
+  })();
+</script>
+<div class="page-head">
+  <h1>Shared material</h1>
+  <p class="muted">Material friends have shared with you, and what you've shared with others.</p>
+</div>
+
+{# ── Selection bar ─────────────────────────────────────────────────── #}
+<div class="card shared-selection-bar hidden" id="shared-selection-bar">
+  <span><strong id="shared-selection-count">0</strong> selected</span>
+  <div class="shared-selection-actions">
+    <button type="button" class="btn btn-primary" id="shared-open-selected">Open Combined Viewer</button>
+    <form method="post" action="{% url 'shared-delete-selected' %}" id="shared-delete-form" class="hidden">
+      {% csrf_token %}<input type="hidden" name="share_ids" id="shared-delete-ids">
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+    <form method="post" action="{% url 'shared-revoke-selected' %}" id="shared-revoke-form" class="hidden">
+      {% csrf_token %}<input type="hidden" name="share_ids" id="shared-revoke-ids">
+      <button type="submit" class="btn btn-danger">Revoke</button>
+    </form>
+    <button type="button" class="btn btn-ghost" id="shared-clear-selection">Clear</button>
+  </div>
+</div>
+
+<div class="shared-layout">
+  <aside class="shared-sidebar card" id="shared-sidebar">
+    <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-expanded="true" aria-controls="sidebar-content">
+      <span class="sidebar-toggle-icon">≡</span> Sections
+    </button>
+    <div class="sidebar-content" id="sidebar-content">
+      <h3>Sections</h3>
+      <button type="button" class="sidebar-option sidebar-option-btn" id="tab-received" aria-pressed="true">
+        <span>shared with me</span>
+        <span class="muted small">({{ received_groups|length }})</span>
+      </button>
+      <button type="button" class="sidebar-option sidebar-option-btn" id="tab-given" aria-pressed="false">
+        <span>shared by me</span>
+        <span class="muted small">({{ given|length }})</span>
+      </button>
+    </div>
+  </aside>
+  <button type="button" class="shared-sidebar-reopen hidden" id="shared-sidebar-reopen" aria-label="Show sections">☰ Sections</button>
+  <button type="button" class="shared-sidebar-backdrop" id="shared-sidebar-backdrop" aria-label="Close sections" tabindex="-1"></button>
+
+  <div class="shared-main-content">
+
+<section class="share-section" id="section-received">
+  <h2>Shared with me</h2>
+  {% if received_groups %}
+  <p class="muted">Showing <span data-visible-count data-total="{{ received_paging.total }}">{{ received_paging.visible }}</span> of {{ received_paging.total }} collections</p>
+
+  {# Combine form (shown when unlocked docs are selected) #}
+  <form method="post" action="{% url 'shared-combine' %}" id="combine-form" class="card combine-bar hidden">
+    {% csrf_token %}
+    <input type="hidden" name="material_ids" id="combine-material-ids">
+    <div class="combine-head">
+      <p class="muted combine-hint">
+        Tick <strong>documents</strong> from different people and subjects,
+        then combine them into one subject under <strong>My Subjects</strong>.
+      </p>
+      <span class="combine-count-chip"><span id="combine-count">0</span> selected</span>
+    </div>
+    <div class="combine-body">
+      <div class="combine-controls">
+        <label class="combine-option">
+          <input type="radio" name="destination" value="new" checked>
+          <span class="combine-option-title">New subject</span>
+          <span class="combine-option-sub">create one for the combined docs</span>
+        </label>
+        <label class="combine-option">
+          <input type="radio" name="destination" value="existing">
+          <span class="combine-option-title">Existing topic</span>
+          <span class="combine-option-sub">add to a topic of mine</span>
+        </label>
+      </div>
+      <div id="combine-new-fields" class="form-row combine-fields">
+        <input type="text" name="subject_name" placeholder="New subject name (e.g. Biology)" maxlength="120">
+        <input type="text" name="class_level" placeholder="Class (e.g. Grade 10)" maxlength="50" list="combine-class-levels">
+        <datalist id="combine-class-levels">
+          {% for cl in my_class_levels %}<option value="{{ cl }}"></option>{% endfor %}
+        </datalist>
+        <input type="text" name="topic_name" placeholder="Topic (default: Shared material)" maxlength="200">
+      </div>
+      <div id="combine-existing-fields" class="form-row combine-fields hidden">
+        <select name="topic_id">
+          <option value="">Choose a topic…</option>
+          {% regroup my_topics by subject as subject_groups %}
+          {% for grp in subject_groups %}
+            <optgroup label="{{ grp.grouper.name }} ({{ grp.grouper.class_level }})">
+              {% for t in grp.list %}
+                <option value="{{ t.pk }}">{{ t.name }}</option>
+              {% endfor %}
+            </optgroup>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary combine-submit" id="combine-submit" disabled>Combine selected documents</button>
+  </form>
+
+  <div class="share-rows">
+    {% for group in received_groups %}
+    <div class="share-group{% if group.is_extra %} share-extra hidden{% endif %}" id="{{ group.anchor }}" data-group-key="{{ group.key }}" data-docs="{{ group.doc_count }}">
+      <div class="share-group-head card">
+        {# ── Checkbox: unlocked groups select docs; locked groups select the collection ── #}
+        {% if group.all_unlocked %}
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check doc-check"
+                 value="group-{{ group.key }}" data-group-key="{{ group.key }}">
+        </label>
+        {% elif group.locked %}
+        <label class="group-select" title="Select this locked collection">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check"
+                 value="group-{{ group.key }}" data-group-key="{{ group.key }}"
+                 data-share-ids="{{ group.all_share_ids|join:',' }}">
+        </label>
+        {% endif %}
+
+        <strong>{{ group.title|default:"Shared document section" }}</strong>
+        <span class="muted">{{ group.doc_count }} file{{ group.doc_count|pluralize }}{% if group.password_share.shared_by %} — by {{ group.password_share.shared_by.profile.display_name|default:group.password_share.shared_by.username }}{% endif %}</span>
+
+        {# ── LOCKED: show badge + unlock button; contents stay hidden ── #}
+        {% if group.locked %}
+          <span class="badge badge-lock" title="Password protected">&#128274; locked</span>
+          <a href="{% url 'shared-open' group.password_share.pk %}?unlock=1"
+             class="btn btn-primary btn-sm unlock-btn">Enter password</a>
+        {% endif %}
+      </div>
+
+      {# ── Documents: selectable for UNLOCKED groups, hidden entirely for LOCKED ── #}
+      {% if group.all_unlocked %}
+        {% for tg in group.topics %}
+        <div class="topic-group card">
+          <label class="topic-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-received-check share-topic-check doc-check"
+                   value="topic-{{ tg.topic.pk }}" data-group-key="{{ group.key }}" data-topic-id="{{ tg.topic.pk }}">
+            <span class="badge">Topic</span>
+            <strong>{{ tg.topic.name }}</strong>
+            <span class="muted">{{ tg.topic.subject.name }} — {{ tg.docs|length }} doc{{ tg.docs|length|pluralize }}</span>
+          </label>
+          <div class="topic-docs">
+            {% for doc in tg.docs %}
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="{{ doc.pk }}" data-material-id="{{ doc.pk }}" data-share-id="{{ doc.share_pk }}"
+                     data-topic-id="{{ tg.topic.pk }}" data-group-key="{{ group.key }}">
+              <span class="doc-icon">{{ doc.icon }}</span>
+              <span class="doc-title">{{ doc.title }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+
+        {% if not group.topics %}
+          <p class="muted empty-note">No documents.</p>
+        {% endif %}
+      {% else %}
+        {# Locked: the collection reveals nothing until the password unlocks it. #}
+        <div class="topic-group card is-locked locked-group">
+          <p class="muted empty-note is-locked">
+            &#128274; This collection is locked. Enter the password to reveal its documents.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if received_paging.remaining %}
+  <div class="see-more-wrap">
+    <button type="button" class="btn btn-ghost see-more-btn">See more ({{ received_paging.remaining }} more collections)</button>
+  </div>
+  {% endif %}
+
+  {% else %}
+    <p class="muted empty-note">Nothing shared with you yet.</p>
+  {% endif %}
+</section>
+
+<section class="share-section" id="section-given">
+  <h2>Shared by me</h2>
+  {% if given %}
+  <p class="muted">Showing <span data-visible-count data-total="{{ given_paging.total }}">{{ given_paging.visible }}</span> of {{ given_paging.total }} collections</p>
+  <div class="share-rows">
+    {% for group in given %}
+    <div class="share-group{% if group.is_extra %} share-extra hidden{% endif %}" id="{{ group.anchor }}" data-group-key="{{ group.key }}" data-docs="{{ group.doc_count }}">
+      <div class="share-group-head card">
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-group-check doc-check"
+                 value="group-{{ group.key }}" data-group-key="{{ group.key }}" data-share-ids="{{ group.all_share_ids|join:',' }}">
+        </label>
+        <strong>{{ group.title|default:"Shared document section" }}</strong>
+        <span class="muted">{{ group.doc_count }} file{{ group.doc_count|pluralize }}{% if group.shared_with_users %} — with {% for u in group.shared_with_users %}{{ u.profile.display_name|default:u.username }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}</span>
+        {% if group.has_password %}<span class="badge badge-lock" title="Password protected">&#128274; protected</span>{% endif %}
+      </div>
+
+      {% for tg in group.topics %}
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-{{ tg.topic.pk }}" data-group-key="{{ group.key }}" data-topic-id="{{ tg.topic.pk }}">
+          <span class="badge">Topic</span>
+          <strong>{{ tg.topic.name }}</strong>
+          <span class="muted">{{ tg.topic.subject.name }} — {{ tg.docs|length }} doc{{ tg.docs|length|pluralize }}</span>
+        </label>
+        <div class="topic-docs">
+          {% for doc in tg.docs %}
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="{{ doc.pk }}" data-material-id="{{ doc.pk }}" data-share-id="{{ doc.all_share_ids|default:doc.share_pk }}"
+                   data-topic-id="{{ tg.topic.pk }}" data-group-key="{{ group.key }}">
+            <span class="doc-icon">{{ doc.icon }}</span>
+            <span class="doc-title">{{ doc.title }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if not group.topics %}
+        <p class="muted empty-note">No documents.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if given_paging.remaining %}
+  <div class="see-more-wrap">
+    <button type="button" class="btn btn-ghost see-more-btn">See more ({{ given_paging.remaining }} more collections)</button>
+  </div>
+  {% endif %}
+
+  {% else %}
+    <p class="muted empty-note">You haven't shared anything yet. Use the Share button on a subject or topic.</p>
+  {% endif %}
+</section>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/shared_lists.js' %}?v=32"></script>
+{% endblock %}

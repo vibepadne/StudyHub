@@ -1,0 +1,300 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>{% block title %}StudyHub{% endblock %}</title>
+  <meta name="theme-color" content="#0B0C0E" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F3F1EA" media="(prefers-color-scheme: light)">
+  <script>
+    /* Pre-paint theme resolution — avoids a flash of the wrong theme. */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("studyhub:theme"); } catch (e) {}
+      if (t !== "light" && t !== "dark") t = "system";
+      var dark = t === "dark" || (t === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+      document.documentElement.dataset.themeChoice = t;
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=104">
+  <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/ui-refresh.css' %}?v=9">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"><span></span></div>
+  <div class="bg-fx" aria-hidden="true">
+    <div class="noise-overlay"></div>
+    <div class="grid-overlay"></div>
+
+  </div>
+
+  <div class="page-viewport">
+    <div class="page-sheet" id="page-sheet">
+      <nav class="navbar">
+        <div class="nav-inner">
+          <a href="{% url 'home' %}" class="brand" aria-label="StudyHub">
+            StudyHub
+          </a>
+          {% if user.is_authenticated %}
+            <button type="button" class="nav-search" id="nav-search-trigger"
+                    title="Search everything — Ctrl+S">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="nav-search-label">Search subjects, topics, documents&hellip;</span>
+              <kbd>Ctrl S</kbd>
+            </button>
+          {% endif %}
+          {% if user.is_authenticated %}
+            <button type="button" class="nav-select-toggle" id="nav-select-toggle"
+                    aria-label="Show selection controls" aria-expanded="false">
+              <span aria-hidden="true">&#9745;</span>
+              <span class="nav-select-label">Select</span>
+            </button>
+          {% endif %}
+          <button type="button" class="nav-menu-toggle" id="nav-menu-toggle"
+                  aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-links">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="nav-links" id="nav-links">
+            {% if user.is_authenticated %}
+              <a href="{% url 'dashboard' %}">My Subjects</a>
+              <a href="{% url 'shared-lists' %}">Shared</a>
+              <span class="nav-divider"></span>
+              <div class="nav-profile-link">
+                <a href="{% url 'profile' %}" class="nav-avatar" title="Your profile">
+                  {% if user_profile.avatar %}
+                    <img src="{{ user_profile.avatar.url }}" alt="{{ user_profile.display_name }}">
+                  {% else %}
+                    <span class="avatar-initials">{{ user_profile.display_name|first|upper }}</span>
+                  {% endif %}
+                </a>
+                <span class="nav-profile-name">{{ user_profile.display_name }}</span>
+              </div>
+            {% else %}
+              <a href="{% url 'login' %}" class="btn btn-ghost btn-sm">Log in</a>
+              <a href="{% url 'register' %}" class="btn btn-primary btn-sm">Sign up</a>
+            {% endif %}
+            <div class="nav-theme-row">
+              <span class="nav-theme-label">Theme</span>
+              <div class="theme-switch" id="theme-switch" role="group" aria-label="Color theme">
+                <button type="button" class="theme-opt" data-theme-opt="light" title="Light theme" aria-label="Light theme">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.4"/>
+                    <path stroke-linecap="round" d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/>
+                  </svg>
+                </button>
+                <button type="button" class="theme-opt" data-theme-opt="dark" title="Dark theme" aria-label="Dark theme">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7Z" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button type="button" class="theme-opt" data-theme-opt="system" title="Follow system theme" aria-label="System theme">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="3" y="4.5" width="18" height="12.5" rx="2.4"/>
+                    <path stroke-linecap="round" d="M8.5 20.5h7"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main class="container" id="main-content">
+        {% if messages %}
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="footer">
+        <p>StudyHub — your study material, one place.</p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const selectToggle = document.getElementById("nav-select-toggle");
+      if (selectToggle) {
+        selectToggle.addEventListener("click", () => {
+          const enabled = document.body.classList.toggle("selection-mode");
+          selectToggle.setAttribute("aria-expanded", String(enabled));
+          selectToggle.setAttribute("aria-label", enabled ? "Hide selection controls" : "Show selection controls");
+        });
+      }
+    })();
+  </script>
+  <script>
+    (() => {
+      const toggle = document.getElementById("nav-menu-toggle");
+      const links = document.getElementById("nav-links");
+      if (!toggle || !links) return;
+      const closeMenu = () => {
+        links.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open navigation menu");
+      };
+      toggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const open = links.classList.toggle("is-open");
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+      });
+      document.addEventListener("click", (event) => {
+        if (!event.target.closest(".navbar")) closeMenu();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeMenu();
+      });
+      links.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+    })();
+  </script>
+  <script>
+    (() => {
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      document.querySelectorAll(".nav-links a[href]").forEach((link) => {
+        try {
+          const url = new URL(link.href, location.origin);
+          if (url.origin !== location.origin) return;
+          const target = url.pathname.replace(/\/+$/, "") || "/";
+          const inLibrary =
+            path === "/dashboard" ||
+            path.startsWith("/dashboard/") ||
+            path.startsWith("/viewer/") ||
+            path.startsWith("/share/") ||
+            (path.startsWith("/shared/combined") &&
+              new URLSearchParams(location.search).get("from") === "topics");
+          const active =
+            target === path ||
+            (target === "/dashboard" && inLibrary) ||
+            (target === "/shared" &&
+              path.startsWith("/shared/") &&
+              !inLibrary) ||
+            (target === "/profile" && path.startsWith("/profile"));
+          if (active) link.setAttribute("aria-current", "page");
+        } catch (e) {}
+      });
+    })();
+  </script>
+  <script>
+    (() => {
+      const bar = document.getElementById("scroll-progress");
+      if (!bar) return;
+      const fill = bar.firstElementChild;
+      const main = document.getElementById("viewer-main");
+      let ticking = false;
+      const update = () => {
+        const winMax = document.documentElement.scrollHeight - window.innerHeight;
+        const winY = window.scrollY || 0;
+        const mainMax = main ? Math.max(0, main.scrollHeight - main.clientHeight) : 0;
+        const mainY = main ? main.scrollTop || 0 : 0;
+        const max = Math.max(winMax, mainMax);
+        const y = Math.max(winY, mainY);
+        const progress = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+        fill.style.transform = `scaleX(${progress})`;
+      };
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          update();
+          ticking = false;
+        });
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      if (main) main.addEventListener("scroll", onScroll, { passive: true });
+      update();
+    })();
+  </script>
+  <script>
+    (() => {
+      const buttons = document.querySelectorAll(
+        ".viewer-toc-reopen, .shared-sidebar-reopen"
+      );
+      if (!buttons.length) return;
+      const idleDelay = () =>
+        window.matchMedia("(max-width: 768px)").matches ? 1000 : 2000;
+      let timer = null;
+      const wake = () => {
+        buttons.forEach((btn) => btn.classList.remove("is-idle"));
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          timer = null;
+          buttons.forEach((btn) => btn.classList.add("is-idle"));
+        }, idleDelay());
+      };
+      ["pointermove", "mousemove", "pointerdown", "keydown", "touchmove", "wheel", "scroll"].forEach((type) => {
+        window.addEventListener(type, wake, { passive: true });
+      });
+      const viewerMain = document.getElementById("viewer-main");
+      if (viewerMain) viewerMain.addEventListener("scroll", wake, { passive: true });
+      if (document.readyState === "complete") {
+        wake();
+      } else {
+        window.addEventListener("load", wake, { once: true });
+      }
+    })();
+  </script>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const targets = document.querySelectorAll(
+        ".subject-card, .feature-card, .auth-card, .profile-layout"
+      );
+      if (!("IntersectionObserver" in window)) return;
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("revealed");
+              io.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.08 }
+      );
+      targets.forEach((el) => {
+        el.classList.add("reveal");
+        io.observe(el);
+      });
+    });
+  </script>
+  <script src="{% static 'js/password_toggle.js' %}?v=1"></script>
+  <script src="{% static 'js/theme_toggle.js' %}?v=1"></script>
+  <script src="{% static 'js/scroll_memory.js' %}?v=4"></script>
+  {% if user.is_authenticated %}
+    <div class="cmdk-backdrop hidden" id="cmdk-backdrop" aria-hidden="true">
+      <div class="cmdk" role="dialog" aria-modal="true" aria-label="Quick search">
+        <div class="cmdk-input-row">
+          <span class="cmdk-mode-badge" id="cmdk-mode-badge">&#128269; Search</span>
+          <input id="cmdk-input" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="Search subjects, topics, documents&hellip;" maxlength="2000">
+          <kbd class="cmdk-esc">esc</kbd>
+        </div>
+        <div class="cmdk-results" id="cmdk-results"></div>
+        <div class="cmdk-hints">
+          <span><kbd>&uarr;&darr;</kbd> navigate</span>
+          <span><kbd>enter</kbd> open</span>
+          <span><kbd>ctrl s</kbd> search</span>
+          <span><kbd>ctrl g</kbd> google</span>
+          <span><kbd>ctrl y</kbd> youtube</span>
+          <span><kbd>ctrl i</kbd> <span id="cmdk-hint-ai">ask AI</span></span>
+        </div>
+      </div>
+    </div>
+    <script>window.CSRF_TOKEN = "{{ csrf_token }}";</script>
+    <script src="{% static 'js/command_palette.js' %}?v=3"></script>
+  {% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

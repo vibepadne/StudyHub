@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body_class %}share-page lock-page{% endblock %}
+{% block title %}Protected — {{ share.group_title|default:share.target_title }} — StudyHub{% endblock %}
+{% block content %}
+<div class="share-wrap">
+  <a href="{% url 'shared-lists' %}" class="back-link">&larr; Back to shared list</a>
+  <div class="card share-card lock-card lock-card--styled">
+    <div class="lock-icon-wrap">
+      <div class="lock-icon">&#128274;</div>
+    </div>
+    <h1 class="lock-title">{{ share.group_title|default:share.target_title }}</h1>
+    <p class="lock-subtitle">
+      Shared by <strong>{{ share.shared_by.profile.display_name|default:share.shared_by.username }}</strong>
+      <span class="muted">@{{ share.shared_by.username }}</span>
+    </p>
+    <p class="muted lock-hint">This collection is password-protected. Enter the password to unlock and view the documents.</p>
+    <form method="post" action="{% url 'shared-unlock' share.pk %}" class="lock-form">
+      {% csrf_token %}
+      <label class="visually-hidden" for="lock-password">Collection password</label>
+      <div class="password-field">
+        <input type="password" id="lock-password" name="password" placeholder="Enter password" required autofocus autocomplete="current-password" aria-label="Collection password">
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Unlock</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

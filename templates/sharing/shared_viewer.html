@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body_class %}viewer-page{% endblock %}
+{% block title %}{% if combined %}Selected shared documents{% else %}{{ share.target_title }} — Shared with you{% endif %}{% endblock %}
+{% block content %}
+<button type="button" class="viewer-toc-reopen" id="viewer-toc-reopen" aria-label="Show contents">☰ Contents</button>
+<nav class="viewer-toc card" id="viewer-toc">
+  <div class="viewer-toc-header">
+    <strong>Contents</strong>
+    <button type="button" class="viewer-toc-toggle" id="viewer-toc-toggle" aria-label="Hide contents" aria-expanded="true">‹</button>
+  </div>
+  <ol>
+    {% for topic in topics %}
+      {% if topic.materials %}
+        <li>
+          <a href="#topic-{{ topic.id }}">{{ topic.name }}</a> ({{ topic.materials.count }} files)
+          <ul class="toc-docs">
+            {% for material in topic.materials.all %}
+              {% if combined or not share.material_id or material.id == share.material_id %}
+                <li><a href="#material-{{ material.id }}" class="toc-doc-link">{{ material.title }}</a> <span class="muted small">— {{ material.get_file_type_display }}</span></li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </li>
+      {% endif %}
+    {% empty %}
+      <li class="muted">No material uploaded yet.</li>
+    {% endfor %}
+  </ol>
+</nav>
+<button type="button" class="viewer-toc-backdrop" id="viewer-toc-backdrop" aria-label="Close contents"></button>
+
+<div class="viewer-main" id="viewer-main">
+<div class="viewer-header">
+  <a href="{{ back_url }}" class="back-link">&larr; {{ back_label }}</a>
+  {% if combined %}
+    <h1>Selected shared documents <span class="badge">COMBINED VIEWER</span></h1>
+  {% else %}
+    <h1>{{ share.target_title }} <span class="badge">{{ share.target_kind }}</span></h1>
+  {% endif %}
+  <p class="muted">
+    {% if combined %}Read-only combined view of the documents you selected.{% else %}Read-only — shared by {{ share.shared_by.profile.display_name|default:share.shared_by.username }} (@{{ share.shared_by.username }}){% endif %}
+  </p>
+</div>
+
+{% for topic in topics %}
+  {% if topic.materials %}
+    <section class="viewer-topic">
+      <h2 id="topic-{{ topic.id }}">{{ topic.name }}</h2>
+      {% for material in topic.materials.all %}
+        {% if combined or not share.material_id or material.id == share.material_id %}<article class="material-block card" id="material-{{ material.id }}">
+          <header class="material-head">
+            <h3><a href="#material-{{ material.id }}" class="material-title-link">{{ material.title }}</a></h3>
+            <div class="material-actions">
+              <span class="badge">{{ material.get_file_type_display }}</span>
+              {% if material.file_type == "pdf" or material.converted_pdf %}
+                <button type="button" class="btn btn-ghost btn-sm" data-fullscreen>Fullscreen</button>
+              {% endif %}
+              <a href="{{ material.file.url }}" download class="btn btn-ghost btn-sm">Download</a>
+            </div>
+          </header>
+          {% if material.file_type == "pdf" %}
+            <embed src="{{ material.file.url }}" type="application/pdf" class="pdf-frame">
+          {% elif material.converted_pdf %}
+            <embed src="{{ material.converted_pdf.url }}" type="application/pdf" class="pdf-frame">
+          {% elif material.file_type == "image" %}
+            <img src="{{ material.file.url }}" alt="{{ material.title }}" class="image-frame">
+          {% elif material.file_type == "doc" and material.file.name|lower|slice:"-5:" == ".docx" %}
+            <div class="docx-viewer" data-src="{{ material.file.url }}">
+              <p class="muted center">Loading document…</p>
+            </div>
+          {% elif material.file_type == "doc" and material.file.name|lower|slice:"-4:" == ".txt" %}
+            <pre class="txt-viewer" data-src="{{ material.file.url }}">Loading…</pre>
+          {% else %}
+            <div class="download-card">
+              <p>This file type can't be previewed in the browser.</p>
+              <a href="{{ material.file.url }}" download class="btn btn-primary">Download to open</a>
+            </div>
+          {% endif %}
+        </article>{% endif %}
+      {% endfor %}
+    </section>
+  {% endif %}
+{% endfor %}
+</div>
+<button type="button" class="back-to-top" id="back-to-top" aria-label="Back to top" title="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5m0 0l-6 6m6-6l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span>Top</span>
+</button>
+{% include "sharing/_ai_chat.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="{% static 'js/viewer.js' %}?v=20"></script>
+<script src="{% static 'js/ai_chat.js' %}?v=4"></script>
+{% endblock %}

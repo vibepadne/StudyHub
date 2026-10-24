@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}My Subjects — StudyHub{% endblock %}
+{% block content %}
+<div class="dashboard-header" id="dashboard-header">
+  <div>
+    <h1>My Study Material</h1>
+    <p class="muted">Create a subject for each class, add topics, and upload your files.</p>
+  </div>
+  <button id="btn-new-subject" class="btn btn-primary">+ New Subject</button>
+</div>
+
+<form id="subject-form" class="card form-row hidden">
+  {% csrf_token %}
+  <input type="text" name="name" placeholder="Subject name (e.g. Biology)" required maxlength="120">
+  <input type="text" name="class_level" placeholder="Class (e.g. Grade 10)" required maxlength="50" list="class-levels">
+  <datalist id="class-levels">
+    {% for cl in class_levels %}<option value="{{ cl }}"></option>{% endfor %}
+  </datalist>
+  <button type="submit" class="btn btn-primary">Create</button>
+  <button type="button" class="btn btn-ghost" id="cancel-subject">Cancel</button>
+</form>
+
+<div id="dashboard-selection-bar" class="card shared-selection-bar hidden">
+  <span><strong id="dashboard-selection-count">0</strong> selected</span>
+  <div class="shared-selection-actions">
+    <a href="#" id="dashboard-share-action" class="btn btn-primary hidden">Share</a>
+    <button type="button" class="btn btn-primary hidden" id="dashboard-open-combined">Open Combined Viewer</button>
+    <button type="button" class="btn btn-danger hidden" id="dashboard-delete-action">Delete</button>
+    <button type="button" class="btn btn-ghost" id="dashboard-clear-selection">Clear</button>
+  </div>
+</div>
+<div id="subjects-grid" class="subjects-grid">
+  {% for s in subjects %}
+    <div class="subject-card" data-subject-id="{{ s.id }}" style="cursor:pointer;" onclick="window.location.href='/dashboard/subject/{{ s.id }}/'">
+      <h3>{{ s.name }}</h3>
+      <p class="subject-meta">{{ s.class_level }}</p>
+      <p class="subject-meta">{{ s.topic_count }} topics · {{ s.material_count }} files</p>
+    </div>
+  {% empty %}
+    <div class="empty-state">No subjects yet. Click <strong>+ New Subject</strong> to create your first one and start organizing.</div>
+  {% endfor %}
+</div>
+<noscript><p class="muted" style="text-align:center; margin-top:1rem;">JavaScript is disabled. Subjects are shown above.</p></noscript>
+
+<section id="subject-panel" class="hidden">
+  <div class="panel-header">
+    <div>
+      <a href="#" id="back-to-subjects" class="back-link">&larr; All subjects</a>
+      <div class="rename-row">
+        <h2 id="panel-title"></h2>
+        <form id="rename-form" class="hidden">
+          <input type="text" id="rename-input" maxlength="120" required autocomplete="off" placeholder="Subject name">
+          <input type="text" id="rename-class-input" maxlength="50" autocomplete="off" placeholder="Class" list="class-levels">
+          <button type="submit" class="btn btn-primary btn-lg-edit">Save</button>
+          <button type="button" id="rename-cancel" class="btn btn-ghost btn-lg-edit">Cancel</button>
+        </form>
+      </div>
+      <p id="panel-meta" class="muted"></p>
+    </div>
+    <div class="panel-actions">
+      <a href="#" id="open-viewer" class="btn btn-primary">Open Combined Viewer</a>
+      <div class="subject-settings">
+        <button type="button" id="subject-settings" class="btn btn-ghost settings-trigger"
+                aria-label="Subject settings" aria-expanded="false" aria-controls="subject-settings-menu">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
+            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+            <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
+          </svg>
+        </button>
+        <div id="subject-settings-menu" class="subject-settings-menu hidden" role="menu">
+          <button type="button" id="rename-subject" class="settings-menu-item" role="menuitem">Edit</button>
+          <button type="button" id="access-subject" class="settings-menu-item" role="menuitem">Access</button>
+          <a href="#" id="share-subject" class="settings-menu-item" role="menuitem">Share</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="access-panel" class="card access-panel hidden">
+    <h3>People with access</h3>
+    <p class="muted small-access-hint">Everyone who can open this subject, including topic-level shares. Revoke anyone individually.</p>
+    <div class="access-search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input type="search" id="access-search" class="access-search"
+             placeholder="Search by name or @username…" maxlength="100" autocomplete="off">
+    </div>
+    <div id="access-list"></div>
+  </section>
+
+  <form id="topic-form" class="card form-row">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="New topic (e.g. Photosynthesis)" required maxlength="200">
+    <button type="submit" class="btn btn-primary">Add Topic</button>
+  </form>
+
+  <div id="topics-list"></div>
+</section>
+
+<template id="tpl-topic">
+  <div class="topic-card card">
+    <div class="topic-head">
+      <label class="bubble-topic-check" title="Select topic for Bubble Share">
+        <input type="checkbox" class="bubble-topic-select" aria-label="Select topic for Bubble Share">
+      </label>
+      <h3><a class="topic-name topic-name-link" href="#"></a></h3>
+      <a href="#" class="topic-viewer btn btn-ghost btn-sm">Open topic viewer</a>
+      <span class="badge topic-count"></span>
+    </div>
+    <ul class="material-list"></ul>
+    <form class="upload-form form-row">
+      {% csrf_token %}
+      <input type="file" name="file" required multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.bmp,.svg,.doc,.docx,.txt,.rtf,.odt,.ppt,.pptx,.odp">
+      <input type="text" name="title" placeholder="Title (optional)" maxlength="200">
+      <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+    </form>
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.CSRF_TOKEN = "{{ csrf_token }}";
+  window.INITIAL_SUBJECT_ID = {{ initial_subject_id|default:"null" }};
+</script>
+<script src="{% static 'js/dashboard.js' %}?v=25"></script>
+{% endblock %}

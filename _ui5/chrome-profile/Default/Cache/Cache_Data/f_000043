@@ -1,0 +1,1050 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Shared — StudyHub</title>
+  <meta name="theme-color" content="#0B0C0E" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#F3F1EA" media="(prefers-color-scheme: light)">
+  <script>
+    /* Pre-paint theme resolution — avoids a flash of the wrong theme. */
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("studyhub:theme"); } catch (e) {}
+      if (t !== "light" && t !== "dark") t = "system";
+      var dark = t === "dark" || (t === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+      document.documentElement.dataset.themeChoice = t;
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/css/style.css?v=104">
+  <link rel="stylesheet" href="/static/css/responsive.css?v=2">
+  <link rel="stylesheet" href="/static/css/ui-refresh.css?v=8">
+</head>
+<body class="shared-page">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="scroll-progress" id="scroll-progress" aria-hidden="true"><span></span></div>
+  <div class="bg-fx" aria-hidden="true">
+    <div class="noise-overlay"></div>
+    <div class="grid-overlay"></div>
+
+  </div>
+
+  <div class="page-viewport">
+    <div class="page-sheet" id="page-sheet">
+      <nav class="navbar">
+        <div class="nav-inner">
+          <a href="/" class="brand" aria-label="StudyHub">
+            StudyHub
+          </a>
+          
+            <button type="button" class="nav-search" id="nav-search-trigger"
+                    title="Search everything — Ctrl+S">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+                <path d="M16.5 16.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="nav-search-label">Search subjects, topics, documents&hellip;</span>
+              <kbd>Ctrl S</kbd>
+            </button>
+          
+          
+            <button type="button" class="nav-select-toggle" id="nav-select-toggle"
+                    aria-label="Show selection controls" aria-expanded="false">
+              <span aria-hidden="true">&#9745;</span>
+              <span class="nav-select-label">Select</span>
+            </button>
+          
+          <button type="button" class="nav-menu-toggle" id="nav-menu-toggle"
+                  aria-label="Open navigation menu" aria-expanded="false" aria-controls="nav-links">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="nav-links" id="nav-links">
+            
+              <a href="/dashboard/">My Subjects</a>
+              <a href="/shared/">Shared</a>
+              <span class="nav-divider"></span>
+              <div class="nav-profile-link">
+                <a href="/profile/" class="nav-avatar" title="Your profile">
+                  
+                    <img src="/media/avatars/Screenshot_1.png" alt="anish">
+                  
+                </a>
+                <span class="nav-profile-name">anish</span>
+              </div>
+            
+            <div class="nav-theme-row">
+              <span class="nav-theme-label">Theme</span>
+              <div class="theme-switch" id="theme-switch" role="group" aria-label="Color theme">
+                <button type="button" class="theme-opt" data-theme-opt="light" title="Light theme" aria-label="Light theme">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="4.4"/>
+                    <path stroke-linecap="round" d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/>
+                  </svg>
+                </button>
+                <button type="button" class="theme-opt" data-theme-opt="dark" title="Dark theme" aria-label="Dark theme">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7Z" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button type="button" class="theme-opt" data-theme-opt="system" title="Follow system theme" aria-label="System theme">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <rect x="3" y="4.5" width="18" height="12.5" rx="2.4"/>
+                    <path stroke-linecap="round" d="M8.5 20.5h7"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main class="container" id="main-content">
+        
+        
+<script>
+  // Apply the remembered filters-sidebar state before first paint so the
+  // layout doesn't visibly shift while the page settles in.
+  (function () {
+    try {
+      var stored = localStorage.getItem("studyhub:shared-sidebar-collapsed");
+      if (window.innerWidth <= 1100 || stored === "true") {
+        document.body.classList.add("shared-sidebar-collapsed");
+      }
+    } catch (e) {}
+    document.documentElement.classList.add("sidebar-preload");
+  })();
+</script>
+<div class="page-head">
+  <h1>Shared material</h1>
+  <p class="muted">Material friends have shared with you, and what you've shared with others.</p>
+</div>
+
+
+<div class="card shared-selection-bar hidden" id="shared-selection-bar">
+  <span><strong id="shared-selection-count">0</strong> selected</span>
+  <div class="shared-selection-actions">
+    <button type="button" class="btn btn-primary" id="shared-open-selected">Open Combined Viewer</button>
+    <form method="post" action="/shared/delete-selected/" id="shared-delete-form" class="hidden">
+      <input type="hidden" name="csrfmiddlewaretoken" value="W4ZB8hxy0tft4CinfvPYJ7IgmU9ClPRQoeKMoMGBUH52N5mBiXTbunjeRTVQ2Evk"><input type="hidden" name="share_ids" id="shared-delete-ids">
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+    <form method="post" action="/shared/revoke-selected/" id="shared-revoke-form" class="hidden">
+      <input type="hidden" name="csrfmiddlewaretoken" value="W4ZB8hxy0tft4CinfvPYJ7IgmU9ClPRQoeKMoMGBUH52N5mBiXTbunjeRTVQ2Evk"><input type="hidden" name="share_ids" id="shared-revoke-ids">
+      <button type="submit" class="btn btn-danger">Revoke</button>
+    </form>
+    <button type="button" class="btn btn-ghost" id="shared-clear-selection">Clear</button>
+  </div>
+</div>
+
+<div class="shared-layout">
+  <aside class="shared-sidebar card" id="shared-sidebar">
+    <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-expanded="true" aria-controls="sidebar-content">
+      <span class="sidebar-toggle-icon">≡</span> Sections
+    </button>
+    <div class="sidebar-content" id="sidebar-content">
+      <h3>Sections</h3>
+      <button type="button" class="sidebar-option sidebar-option-btn" id="tab-received" aria-pressed="true">
+        <span>shared with me</span>
+        <span class="muted small">(6)</span>
+      </button>
+      <button type="button" class="sidebar-option sidebar-option-btn" id="tab-given" aria-pressed="false">
+        <span>shared by me</span>
+        <span class="muted small">(6)</span>
+      </button>
+    </div>
+  </aside>
+  <button type="button" class="shared-sidebar-reopen hidden" id="shared-sidebar-reopen" aria-label="Show sections">☰ Sections</button>
+  <button type="button" class="shared-sidebar-backdrop" id="shared-sidebar-backdrop" aria-label="Close sections" tabindex="-1"></button>
+
+  <div class="shared-main-content">
+
+<section class="share-section" id="section-received">
+  <h2>Shared with me</h2>
+  
+  <p class="muted">Showing <span data-visible-count data-total="6">5</span> of 6 collections</p>
+
+  
+  <form method="post" action="/shared/combine/" id="combine-form" class="card combine-bar hidden">
+    <input type="hidden" name="csrfmiddlewaretoken" value="W4ZB8hxy0tft4CinfvPYJ7IgmU9ClPRQoeKMoMGBUH52N5mBiXTbunjeRTVQ2Evk">
+    <input type="hidden" name="material_ids" id="combine-material-ids">
+    <div class="combine-head">
+      <p class="muted combine-hint">
+        Tick <strong>documents</strong> from different people and subjects,
+        then combine them into one subject under <strong>My Subjects</strong>.
+      </p>
+      <span class="combine-count-chip"><span id="combine-count">0</span> selected</span>
+    </div>
+    <div class="combine-body">
+      <div class="combine-controls">
+        <label class="combine-option">
+          <input type="radio" name="destination" value="new" checked>
+          <span class="combine-option-title">New subject</span>
+          <span class="combine-option-sub">create one for the combined docs</span>
+        </label>
+        <label class="combine-option">
+          <input type="radio" name="destination" value="existing">
+          <span class="combine-option-title">Existing topic</span>
+          <span class="combine-option-sub">add to a topic of mine</span>
+        </label>
+      </div>
+      <div id="combine-new-fields" class="form-row combine-fields">
+        <input type="text" name="subject_name" placeholder="New subject name (e.g. Biology)" maxlength="120">
+        <input type="text" name="class_level" placeholder="Class (e.g. Grade 10)" maxlength="50" list="combine-class-levels">
+        <datalist id="combine-class-levels">
+          <option value="2"></option><option value="6th sem"></option><option value="6th sem"></option>
+        </datalist>
+        <input type="text" name="topic_name" placeholder="Topic (default: Shared material)" maxlength="200">
+      </div>
+      <div id="combine-existing-fields" class="form-row combine-fields hidden">
+        <select name="topic_id">
+          <option value="">Choose a topic…</option>
+          
+          
+            <optgroup label="machine learining (6th sem)">
+              
+                <option value="22">intro</option>
+              
+                <option value="39">hello</option>
+              
+                <option value="40">hell no</option>
+              
+                <option value="41">hello go</option>
+              
+            </optgroup>
+          
+        </select>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary combine-submit" id="combine-submit" disabled>Combine selected documents</button>
+  </form>
+
+  <div class="share-rows">
+    
+    <div class="share-group" id="collection-title-yashodaleft-by-26-pg-66ad5442-c387-459d-8d9c-e84a1101d950" data-group-key="title:yashodaleft|by:26|pg:66ad5442-c387-459d-8d9c-e84a1101d950" data-docs="1">
+      <div class="share-group-head card">
+        
+        
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check doc-check"
+                 value="group-title:yashodaleft|by:26|pg:66ad5442-c387-459d-8d9c-e84a1101d950" data-group-key="title:yashodaleft|by:26|pg:66ad5442-c387-459d-8d9c-e84a1101d950">
+        </label>
+        
+
+        <strong>yashodaleft</strong>
+        <span class="muted">1 file — by ANISH POUDEL</span>
+
+        
+        
+      </div>
+
+      
+      
+        
+        <div class="topic-group card">
+          <label class="topic-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-received-check share-topic-check doc-check"
+                   value="topic-24" data-group-key="title:yashodaleft|by:26|pg:66ad5442-c387-459d-8d9c-e84a1101d950" data-topic-id="24">
+            <span class="badge">Topic</span>
+            <strong>intro</strong>
+            <span class="muted">ml — 1 doc</span>
+          </label>
+          <div class="topic-docs">
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="100" data-material-id="100" data-share-id="170"
+                     data-topic-id="24" data-group-key="title:yashodaleft|by:26|pg:66ad5442-c387-459d-8d9c-e84a1101d950">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Chapter 7</span>
+            </label>
+            
+          </div>
+        </div>
+        
+
+        
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-hellnah-by-26-pg-65a40be0-d3b8-48e9-87e7-9a52b003cdc4" data-group-key="title:hellnah|by:26|pg:65a40be0-d3b8-48e9-87e7-9a52b003cdc4" data-docs="3">
+      <div class="share-group-head card">
+        
+        
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check doc-check"
+                 value="group-title:hellnah|by:26|pg:65a40be0-d3b8-48e9-87e7-9a52b003cdc4" data-group-key="title:hellnah|by:26|pg:65a40be0-d3b8-48e9-87e7-9a52b003cdc4">
+        </label>
+        
+
+        <strong>hellnah</strong>
+        <span class="muted">3 files — by ANISH POUDEL</span>
+
+        
+        
+      </div>
+
+      
+      
+        
+        <div class="topic-group card">
+          <label class="topic-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-received-check share-topic-check doc-check"
+                   value="topic-24" data-group-key="title:hellnah|by:26|pg:65a40be0-d3b8-48e9-87e7-9a52b003cdc4" data-topic-id="24">
+            <span class="badge">Topic</span>
+            <strong>intro</strong>
+            <span class="muted">ml — 3 docs</span>
+          </label>
+          <div class="topic-docs">
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="104" data-material-id="104" data-share-id="155"
+                     data-topic-id="24" data-group-key="title:hellnah|by:26|pg:65a40be0-d3b8-48e9-87e7-9a52b003cdc4">
+              <span class="doc-icon">📄</span>
+              <span class="doc-title">lab report of simulation final anish</span>
+            </label>
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="108" data-material-id="108" data-share-id="159"
+                     data-topic-id="24" data-group-key="title:hellnah|by:26|pg:65a40be0-d3b8-48e9-87e7-9a52b003cdc4">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Unit 4 - Data Link Layer -LectureOKK</span>
+            </label>
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="106" data-material-id="106" data-share-id="158"
+                     data-topic-id="24" data-group-key="title:hellnah|by:26|pg:65a40be0-d3b8-48e9-87e7-9a52b003cdc4">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Unit 3 - Physical Layer - lecture</span>
+            </label>
+            
+          </div>
+        </div>
+        
+
+        
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-anisha-by-26-pg-11bee818-f6f1-492f-80aa-e4a97de3a3b7" data-group-key="title:anisha|by:26|pg:11bee818-f6f1-492f-80aa-e4a97de3a3b7" data-docs="2">
+      <div class="share-group-head card">
+        
+        
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check doc-check"
+                 value="group-title:anisha|by:26|pg:11bee818-f6f1-492f-80aa-e4a97de3a3b7" data-group-key="title:anisha|by:26|pg:11bee818-f6f1-492f-80aa-e4a97de3a3b7">
+        </label>
+        
+
+        <strong>anisha</strong>
+        <span class="muted">2 files — by ANISH POUDEL</span>
+
+        
+        
+      </div>
+
+      
+      
+        
+        <div class="topic-group card">
+          <label class="topic-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-received-check share-topic-check doc-check"
+                   value="topic-24" data-group-key="title:anisha|by:26|pg:11bee818-f6f1-492f-80aa-e4a97de3a3b7" data-topic-id="24">
+            <span class="badge">Topic</span>
+            <strong>intro</strong>
+            <span class="muted">ml — 2 docs</span>
+          </label>
+          <div class="topic-docs">
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="103" data-material-id="103" data-share-id="156"
+                     data-topic-id="24" data-group-key="title:anisha|by:26|pg:11bee818-f6f1-492f-80aa-e4a97de3a3b7">
+              <span class="doc-icon">📊</span>
+              <span class="doc-title">presentation report</span>
+            </label>
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="105" data-material-id="105" data-share-id="154"
+                     data-topic-id="24" data-group-key="title:anisha|by:26|pg:11bee818-f6f1-492f-80aa-e4a97de3a3b7">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">CN chapter 3</span>
+            </label>
+            
+          </div>
+        </div>
+        
+
+        
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-ramudon-by-26-pg-b97784e2-73d1-4857-adda-9a8aa9b7b8b1" data-group-key="title:ramudon|by:26|pg:b97784e2-73d1-4857-adda-9a8aa9b7b8b1" data-docs="2">
+      <div class="share-group-head card">
+        
+        
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check doc-check"
+                 value="group-title:ramudon|by:26|pg:b97784e2-73d1-4857-adda-9a8aa9b7b8b1" data-group-key="title:ramudon|by:26|pg:b97784e2-73d1-4857-adda-9a8aa9b7b8b1">
+        </label>
+        
+
+        <strong>ramudon</strong>
+        <span class="muted">2 files — by ANISH POUDEL</span>
+
+        
+        
+      </div>
+
+      
+      
+        
+        <div class="topic-group card">
+          <label class="topic-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-received-check share-topic-check doc-check"
+                   value="topic-24" data-group-key="title:ramudon|by:26|pg:b97784e2-73d1-4857-adda-9a8aa9b7b8b1" data-topic-id="24">
+            <span class="badge">Topic</span>
+            <strong>intro</strong>
+            <span class="muted">ml — 2 docs</span>
+          </label>
+          <div class="topic-docs">
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="96" data-material-id="96" data-share-id="151"
+                     data-topic-id="24" data-group-key="title:ramudon|by:26|pg:b97784e2-73d1-4857-adda-9a8aa9b7b8b1">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Unit_5_ML</span>
+            </label>
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="102" data-material-id="102" data-share-id="150"
+                     data-topic-id="24" data-group-key="title:ramudon|by:26|pg:b97784e2-73d1-4857-adda-9a8aa9b7b8b1">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Chapter 6</span>
+            </label>
+            
+          </div>
+        </div>
+        
+
+        
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-ramudon-by-26-pg-5204934f-f632-415d-9ef4-98908718a2a1" data-group-key="title:ramudon|by:26|pg:5204934f-f632-415d-9ef4-98908718a2a1" data-docs="1">
+      <div class="share-group-head card">
+        
+        
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check doc-check"
+                 value="group-title:ramudon|by:26|pg:5204934f-f632-415d-9ef4-98908718a2a1" data-group-key="title:ramudon|by:26|pg:5204934f-f632-415d-9ef4-98908718a2a1">
+        </label>
+        
+
+        <strong>ramudon</strong>
+        <span class="muted">1 file — by ANISH POUDEL</span>
+
+        
+        
+      </div>
+
+      
+      
+        
+        <div class="topic-group card">
+          <label class="topic-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-received-check share-topic-check doc-check"
+                   value="topic-24" data-group-key="title:ramudon|by:26|pg:5204934f-f632-415d-9ef4-98908718a2a1" data-topic-id="24">
+            <span class="badge">Topic</span>
+            <strong>intro</strong>
+            <span class="muted">ml — 1 doc</span>
+          </label>
+          <div class="topic-docs">
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="98" data-material-id="98" data-share-id="149"
+                     data-topic-id="24" data-group-key="title:ramudon|by:26|pg:5204934f-f632-415d-9ef4-98908718a2a1">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Chapter 5</span>
+            </label>
+            
+          </div>
+        </div>
+        
+
+        
+      
+    </div>
+    
+    <div class="share-group share-extra hidden" id="collection-title-deepseek-by-26-pg-a8324ad4-8419-4f4a-a658-5b420b71088e" data-group-key="title:deepseek|by:26|pg:a8324ad4-8419-4f4a-a658-5b420b71088e" data-docs="3">
+      <div class="share-group-head card">
+        
+        
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-received-check share-group-check doc-check"
+                 value="group-title:deepseek|by:26|pg:a8324ad4-8419-4f4a-a658-5b420b71088e" data-group-key="title:deepseek|by:26|pg:a8324ad4-8419-4f4a-a658-5b420b71088e">
+        </label>
+        
+
+        <strong>deepseek</strong>
+        <span class="muted">3 files — by ANISH POUDEL</span>
+
+        
+        
+      </div>
+
+      
+      
+        
+        <div class="topic-group card">
+          <label class="topic-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-received-check share-topic-check doc-check"
+                   value="topic-24" data-group-key="title:deepseek|by:26|pg:a8324ad4-8419-4f4a-a658-5b420b71088e" data-topic-id="24">
+            <span class="badge">Topic</span>
+            <strong>intro</strong>
+            <span class="muted">ml — 3 docs</span>
+          </label>
+          <div class="topic-docs">
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="97" data-material-id="97" data-share-id="146"
+                     data-topic-id="24" data-group-key="title:deepseek|by:26|pg:a8324ad4-8419-4f4a-a658-5b420b71088e">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Unit_4_ML</span>
+            </label>
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="99" data-material-id="99" data-share-id="145"
+                     data-topic-id="24" data-group-key="title:deepseek|by:26|pg:a8324ad4-8419-4f4a-a658-5b420b71088e">
+              <span class="doc-icon">📕</span>
+              <span class="doc-title">Chapter 8</span>
+            </label>
+            
+            <label class="doc-option">
+              <input type="checkbox" class="shared-selection-checkbox shared-received-check share-child-check doc-check"
+                     value="95" data-material-id="95" data-share-id="144"
+                     data-topic-id="24" data-group-key="title:deepseek|by:26|pg:a8324ad4-8419-4f4a-a658-5b420b71088e">
+              <span class="doc-icon">📄</span>
+              <span class="doc-title">03 CMP 362 Image Processing and Pattern Recognition 3-1-2 (2)</span>
+            </label>
+            
+          </div>
+        </div>
+        
+
+        
+      
+    </div>
+    
+  </div>
+
+  
+  <div class="see-more-wrap">
+    <button type="button" class="btn btn-ghost see-more-btn">See more (1 more collections)</button>
+  </div>
+  
+
+  
+</section>
+
+<section class="share-section" id="section-given">
+  <h2>Shared by me</h2>
+  
+  <p class="muted">Showing <span data-visible-count data-total="6">5</span> of 6 collections</p>
+  <div class="share-rows">
+    
+    <div class="share-group" id="collection-title-whatsup-by-25-pg-53e1f842-2630-4598-a47d-2d1bfdfe89d0" data-group-key="title:whatsup|by:25|pg:53e1f842-2630-4598-a47d-2d1bfdfe89d0" data-docs="3">
+      <div class="share-group-head card">
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-group-check doc-check"
+                 value="group-title:whatsup|by:25|pg:53e1f842-2630-4598-a47d-2d1bfdfe89d0" data-group-key="title:whatsup|by:25|pg:53e1f842-2630-4598-a47d-2d1bfdfe89d0" data-share-ids="161,162,168">
+        </label>
+        <strong>whatsup</strong>
+        <span class="muted">3 files — with ANISH POUDEL</span>
+        
+      </div>
+
+      
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-39" data-group-key="title:whatsup|by:25|pg:53e1f842-2630-4598-a47d-2d1bfdfe89d0" data-topic-id="39">
+          <span class="badge">Topic</span>
+          <strong>hello</strong>
+          <span class="muted">machine learining — 3 docs</span>
+        </label>
+        <div class="topic-docs">
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="73" data-material-id="73" data-share-id="168"
+                   data-topic-id="39" data-group-key="title:whatsup|by:25|pg:53e1f842-2630-4598-a47d-2d1bfdfe89d0">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">Chapter 7</span>
+          </label>
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="76" data-material-id="76" data-share-id="162"
+                   data-topic-id="39" data-group-key="title:whatsup|by:25|pg:53e1f842-2630-4598-a47d-2d1bfdfe89d0">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">Chapter 6</span>
+          </label>
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="75" data-material-id="75" data-share-id="161"
+                   data-topic-id="39" data-group-key="title:whatsup|by:25|pg:53e1f842-2630-4598-a47d-2d1bfdfe89d0">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">CN chapter 7 and 8</span>
+          </label>
+          
+        </div>
+      </div>
+      
+
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-whatnow-by-25-pg-bf8f363e-af71-46d1-914c-11333524b4d3" data-group-key="title:whatnow|by:25|pg:bf8f363e-af71-46d1-914c-11333524b4d3" data-docs="1">
+      <div class="share-group-head card">
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-group-check doc-check"
+                 value="group-title:whatnow|by:25|pg:bf8f363e-af71-46d1-914c-11333524b4d3" data-group-key="title:whatnow|by:25|pg:bf8f363e-af71-46d1-914c-11333524b4d3" data-share-ids="166">
+        </label>
+        <strong>whatnow</strong>
+        <span class="muted">1 file — with ANISH POUDEL</span>
+        
+      </div>
+
+      
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-41" data-group-key="title:whatnow|by:25|pg:bf8f363e-af71-46d1-914c-11333524b4d3" data-topic-id="41">
+          <span class="badge">Topic</span>
+          <strong>hello go</strong>
+          <span class="muted">machine learining — 1 doc</span>
+        </label>
+        <div class="topic-docs">
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="82" data-material-id="82" data-share-id="166"
+                   data-topic-id="41" data-group-key="title:whatnow|by:25|pg:bf8f363e-af71-46d1-914c-11333524b4d3">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">Unit 4 - Data Link Layer -LectureOKK</span>
+          </label>
+          
+        </div>
+      </div>
+      
+
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-whatnow-by-25-pg-3ae780f9-025f-4003-b6f0-1fc926dbda4b" data-group-key="title:whatnow|by:25|pg:3ae780f9-025f-4003-b6f0-1fc926dbda4b" data-docs="1">
+      <div class="share-group-head card">
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-group-check doc-check"
+                 value="group-title:whatnow|by:25|pg:3ae780f9-025f-4003-b6f0-1fc926dbda4b" data-group-key="title:whatnow|by:25|pg:3ae780f9-025f-4003-b6f0-1fc926dbda4b" data-share-ids="164">
+        </label>
+        <strong>whatnow</strong>
+        <span class="muted">1 file — with ANISH POUDEL</span>
+        
+      </div>
+
+      
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-40" data-group-key="title:whatnow|by:25|pg:3ae780f9-025f-4003-b6f0-1fc926dbda4b" data-topic-id="40">
+          <span class="badge">Topic</span>
+          <strong>hell no</strong>
+          <span class="muted">machine learining — 1 doc</span>
+        </label>
+        <div class="topic-docs">
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="78" data-material-id="78" data-share-id="164"
+                   data-topic-id="40" data-group-key="title:whatnow|by:25|pg:3ae780f9-025f-4003-b6f0-1fc926dbda4b">
+            <span class="doc-icon">📄</span>
+            <span class="doc-title">lab report of simulation final anish</span>
+          </label>
+          
+        </div>
+      </div>
+      
+
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-againone-by-25-pg-8924a3c0-7542-44aa-9c1f-08b83ee8773f" data-group-key="title:againone|by:25|pg:8924a3c0-7542-44aa-9c1f-08b83ee8773f" data-docs="2">
+      <div class="share-group-head card">
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-group-check doc-check"
+                 value="group-title:againone|by:25|pg:8924a3c0-7542-44aa-9c1f-08b83ee8773f" data-group-key="title:againone|by:25|pg:8924a3c0-7542-44aa-9c1f-08b83ee8773f" data-share-ids="153,167">
+        </label>
+        <strong>againone</strong>
+        <span class="muted">2 files — with ANISH POUDEL</span>
+        
+      </div>
+
+      
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-22" data-group-key="title:againone|by:25|pg:8924a3c0-7542-44aa-9c1f-08b83ee8773f" data-topic-id="22">
+          <span class="badge">Topic</span>
+          <strong>intro</strong>
+          <span class="muted">machine learining — 1 doc</span>
+        </label>
+        <div class="topic-docs">
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="45" data-material-id="45" data-share-id="167"
+                   data-topic-id="22" data-group-key="title:againone|by:25|pg:8924a3c0-7542-44aa-9c1f-08b83ee8773f">
+            <span class="doc-icon">📄</span>
+            <span class="doc-title">03 CMP 362 Image Processing and Pattern Recognition 3-1-2 (2)</span>
+          </label>
+          
+        </div>
+      </div>
+      
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-39" data-group-key="title:againone|by:25|pg:8924a3c0-7542-44aa-9c1f-08b83ee8773f" data-topic-id="39">
+          <span class="badge">Topic</span>
+          <strong>hello</strong>
+          <span class="muted">machine learining — 1 doc</span>
+        </label>
+        <div class="topic-docs">
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="72" data-material-id="72" data-share-id="153"
+                   data-topic-id="39" data-group-key="title:againone|by:25|pg:8924a3c0-7542-44aa-9c1f-08b83ee8773f">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">Chapter 8</span>
+          </label>
+          
+        </div>
+      </div>
+      
+
+      
+    </div>
+    
+    <div class="share-group" id="collection-title-onemore-by-25-pg-74f80151-0c77-4fd2-8ec4-eec8b9986fd7" data-group-key="title:onemore|by:25|pg:74f80151-0c77-4fd2-8ec4-eec8b9986fd7" data-docs="2">
+      <div class="share-group-head card">
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-group-check doc-check"
+                 value="group-title:onemore|by:25|pg:74f80151-0c77-4fd2-8ec4-eec8b9986fd7" data-group-key="title:onemore|by:25|pg:74f80151-0c77-4fd2-8ec4-eec8b9986fd7" data-share-ids="152,165">
+        </label>
+        <strong>onemore</strong>
+        <span class="muted">2 files — with ANISH POUDEL</span>
+        
+      </div>
+
+      
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-40" data-group-key="title:onemore|by:25|pg:74f80151-0c77-4fd2-8ec4-eec8b9986fd7" data-topic-id="40">
+          <span class="badge">Topic</span>
+          <strong>hell no</strong>
+          <span class="muted">machine learining — 2 docs</span>
+        </label>
+        <div class="topic-docs">
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="77" data-material-id="77" data-share-id="165"
+                   data-topic-id="40" data-group-key="title:onemore|by:25|pg:74f80151-0c77-4fd2-8ec4-eec8b9986fd7">
+            <span class="doc-icon">📊</span>
+            <span class="doc-title">presentation report</span>
+          </label>
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="79" data-material-id="79" data-share-id="152"
+                   data-topic-id="40" data-group-key="title:onemore|by:25|pg:74f80151-0c77-4fd2-8ec4-eec8b9986fd7">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">CN chapter 3</span>
+          </label>
+          
+        </div>
+      </div>
+      
+
+      
+    </div>
+    
+    <div class="share-group share-extra hidden" id="collection-title-hellyes-by-25-pg-20f2722f-69d7-4476-9ca3-ad812ffd7be9" data-group-key="title:hellyes|by:25|pg:20f2722f-69d7-4476-9ca3-ad812ffd7be9" data-docs="3">
+      <div class="share-group-head card">
+        <label class="group-select" title="Select all in this section">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-group-check doc-check"
+                 value="group-title:hellyes|by:25|pg:20f2722f-69d7-4476-9ca3-ad812ffd7be9" data-group-key="title:hellyes|by:25|pg:20f2722f-69d7-4476-9ca3-ad812ffd7be9" data-share-ids="148,157,160">
+        </label>
+        <strong>hellyes</strong>
+        <span class="muted">3 files — with ANISH POUDEL</span>
+        <span class="badge badge-lock" title="Password protected">&#128274; protected</span>
+      </div>
+
+      
+      <div class="topic-group card">
+        <label class="topic-option">
+          <input type="checkbox" class="shared-selection-checkbox shared-given-check share-topic-check doc-check"
+                 value="topic-22" data-group-key="title:hellyes|by:25|pg:20f2722f-69d7-4476-9ca3-ad812ffd7be9" data-topic-id="22">
+          <span class="badge">Topic</span>
+          <strong>intro</strong>
+          <span class="muted">machine learining — 3 docs</span>
+        </label>
+        <div class="topic-docs">
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="46" data-material-id="46" data-share-id="160"
+                   data-topic-id="22" data-group-key="title:hellyes|by:25|pg:20f2722f-69d7-4476-9ca3-ad812ffd7be9">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">Unit_5_ML</span>
+          </label>
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="47" data-material-id="47" data-share-id="148"
+                   data-topic-id="22" data-group-key="title:hellyes|by:25|pg:20f2722f-69d7-4476-9ca3-ad812ffd7be9">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">Unit_4_ML</span>
+          </label>
+          
+          <label class="doc-option">
+            <input type="checkbox" class="shared-selection-checkbox shared-given-check share-child-check doc-check"
+                   value="48" data-material-id="48" data-share-id="157"
+                   data-topic-id="22" data-group-key="title:hellyes|by:25|pg:20f2722f-69d7-4476-9ca3-ad812ffd7be9">
+            <span class="doc-icon">📕</span>
+            <span class="doc-title">Chapter 5</span>
+          </label>
+          
+        </div>
+      </div>
+      
+
+      
+    </div>
+    
+  </div>
+
+  
+  <div class="see-more-wrap">
+    <button type="button" class="btn btn-ghost see-more-btn">See more (1 more collections)</button>
+  </div>
+  
+
+  
+</section>
+
+  </div>
+</div>
+
+      </main>
+
+      <footer class="footer">
+        <p>StudyHub — your study material, one place.</p>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const selectToggle = document.getElementById("nav-select-toggle");
+      if (selectToggle) {
+        selectToggle.addEventListener("click", () => {
+          const enabled = document.body.classList.toggle("selection-mode");
+          selectToggle.setAttribute("aria-expanded", String(enabled));
+          selectToggle.setAttribute("aria-label", enabled ? "Hide selection controls" : "Show selection controls");
+        });
+      }
+    })();
+  </script>
+  <script>
+    (() => {
+      const toggle = document.getElementById("nav-menu-toggle");
+      const links = document.getElementById("nav-links");
+      if (!toggle || !links) return;
+      const closeMenu = () => {
+        links.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "Open navigation menu");
+      };
+      toggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const open = links.classList.toggle("is-open");
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "Close navigation menu" : "Open navigation menu");
+      });
+      document.addEventListener("click", (event) => {
+        if (!event.target.closest(".navbar")) closeMenu();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeMenu();
+      });
+      links.querySelectorAll("a").forEach((link) => link.addEventListener("click", closeMenu));
+    })();
+  </script>
+  <script>
+    (() => {
+      const path = location.pathname.replace(/\/+$/, "") || "/";
+      document.querySelectorAll(".nav-links a[href]").forEach((link) => {
+        try {
+          const url = new URL(link.href, location.origin);
+          if (url.origin !== location.origin) return;
+          const target = url.pathname.replace(/\/+$/, "") || "/";
+          const inLibrary =
+            path === "/dashboard" ||
+            path.startsWith("/dashboard/") ||
+            path.startsWith("/viewer/") ||
+            path.startsWith("/share/") ||
+            (path.startsWith("/shared/combined") &&
+              new URLSearchParams(location.search).get("from") === "topics");
+          const active =
+            target === path ||
+            (target === "/dashboard" && inLibrary) ||
+            (target === "/shared" &&
+              path.startsWith("/shared/") &&
+              !inLibrary) ||
+            (target === "/profile" && path.startsWith("/profile"));
+          if (active) link.setAttribute("aria-current", "page");
+        } catch (e) {}
+      });
+    })();
+  </script>
+  <script>
+    (() => {
+      const bar = document.getElementById("scroll-progress");
+      if (!bar) return;
+      const fill = bar.firstElementChild;
+      const main = document.getElementById("viewer-main");
+      let ticking = false;
+      const update = () => {
+        const winMax = document.documentElement.scrollHeight - window.innerHeight;
+        const winY = window.scrollY || 0;
+        const mainMax = main ? Math.max(0, main.scrollHeight - main.clientHeight) : 0;
+        const mainY = main ? main.scrollTop || 0 : 0;
+        const max = Math.max(winMax, mainMax);
+        const y = Math.max(winY, mainY);
+        const progress = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+        fill.style.transform = `scaleX(${progress})`;
+      };
+      const onScroll = () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+          update();
+          ticking = false;
+        });
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll);
+      if (main) main.addEventListener("scroll", onScroll, { passive: true });
+      update();
+    })();
+  </script>
+  <script>
+    (() => {
+      const buttons = document.querySelectorAll(
+        ".viewer-toc-reopen, .shared-sidebar-reopen"
+      );
+      if (!buttons.length) return;
+      const idleDelay = () =>
+        window.matchMedia("(max-width: 768px)").matches ? 1000 : 2000;
+      let timer = null;
+      const wake = () => {
+        buttons.forEach((btn) => btn.classList.remove("is-idle"));
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          timer = null;
+          buttons.forEach((btn) => btn.classList.add("is-idle"));
+        }, idleDelay());
+      };
+      ["pointermove", "mousemove", "pointerdown", "keydown", "touchmove", "wheel", "scroll"].forEach((type) => {
+        window.addEventListener(type, wake, { passive: true });
+      });
+      const viewerMain = document.getElementById("viewer-main");
+      if (viewerMain) viewerMain.addEventListener("scroll", wake, { passive: true });
+      if (document.readyState === "complete") {
+        wake();
+      } else {
+        window.addEventListener("load", wake, { once: true });
+      }
+    })();
+  </script>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const targets = document.querySelectorAll(
+        ".subject-card, .feature-card, .auth-card, .profile-layout"
+      );
+      if (!("IntersectionObserver" in window)) return;
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("revealed");
+              io.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.08 }
+      );
+      targets.forEach((el) => {
+        el.classList.add("reveal");
+        io.observe(el);
+      });
+    });
+  </script>
+  <script src="/static/js/password_toggle.js?v=1"></script>
+  <script src="/static/js/theme_toggle.js?v=1"></script>
+  <script src="/static/js/scroll_memory.js?v=4"></script>
+  
+    <div class="cmdk-backdrop hidden" id="cmdk-backdrop" aria-hidden="true">
+      <div class="cmdk" role="dialog" aria-modal="true" aria-label="Quick search">
+        <div class="cmdk-input-row">
+          <span class="cmdk-mode-badge" id="cmdk-mode-badge">&#128269; Search</span>
+          <input id="cmdk-input" type="text" autocomplete="off" spellcheck="false"
+                 placeholder="Search subjects, topics, documents&hellip;" maxlength="2000">
+          <kbd class="cmdk-esc">esc</kbd>
+        </div>
+        <div class="cmdk-results" id="cmdk-results"></div>
+        <div class="cmdk-hints">
+          <span><kbd>&uarr;&darr;</kbd> navigate</span>
+          <span><kbd>enter</kbd> open</span>
+          <span><kbd>ctrl s</kbd> search</span>
+          <span><kbd>ctrl g</kbd> google</span>
+          <span><kbd>ctrl y</kbd> youtube</span>
+          <span><kbd>ctrl i</kbd> <span id="cmdk-hint-ai">ask AI</span></span>
+        </div>
+      </div>
+    </div>
+    <script>window.CSRF_TOKEN = "W4ZB8hxy0tft4CinfvPYJ7IgmU9ClPRQoeKMoMGBUH52N5mBiXTbunjeRTVQ2Evk";</script>
+    <script src="/static/js/command_palette.js?v=3"></script>
+  
+  
+<script src="/static/js/shared_lists.js?v=32"></script>
+
+</body>
+</html>

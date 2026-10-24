@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block body_class %}share-page{% endblock %}
+{% block title %}Share — StudyHub{% endblock %}
+{% block content %}
+<div class="share-wrap">
+  <a href="{% url 'dashboard' %}" class="back-link">&larr; Back to dashboard</a>
+  <div class="card share-card">
+    <h1>
+      Share {{ kind }}
+      <span class="badge">{{ target }}</span>
+    </h1>
+    <p class="muted">
+      Search people by name or @username. Only the <strong>documents</strong> inside this {{ kind }} will be shared — the {{ kind }} name itself is not shared.
+      {% if kind == "subject" %}All documents from all topics in this subject will be shared.{% else %}All documents in this topic will be shared.{% endif %}
+    </p>
+
+    {% if errors %}
+      <div class="alert alert-error">
+        {% for error in errors %}<p>{{ error }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" id="share-form">
+      {% csrf_token %}
+      <input type="hidden" name="recipient_ids" id="recipient-ids" value="">
+
+      <label class="field-label" for="user-search-input">Share with</label>
+      <div class="chip-box" id="chip-box">
+        <div class="chips" id="chips"></div>
+        <input
+          type="text"
+          id="user-search-input"
+          placeholder="Type a name or @username…"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <div class="search-dropdown hidden" id="search-dropdown"></div>
+      </div>
+      <p class="muted small" id="pick-hint">Minimum 2 characters. Results show @username so look-alike names are never confused.</p>
+
+      <label class="field-label" for="title">Shared section title</label>
+      <input type="text" name="title" id="title" placeholder="e.g. Shared Biology documents" maxlength="200">
+
+      <label class="field-label" for="password">Password (optional)</label>
+      <div class="form-row">
+        <input type="password" name="password" id="password" placeholder="Set a password…" minlength="4" maxlength="128">
+        <input type="password" name="password_confirm" id="password-confirm" placeholder="Repeat password…">
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Share</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.SEARCH_URL = "{% url 'user-search' %}";</script>
+<script src="{% static 'js/share_form.js' %}?v=4"></script>
+{% endblock %}

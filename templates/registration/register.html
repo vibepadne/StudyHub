@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block body_class %}auth-page{% endblock %}
+{% block title %}Sign Up — StudyHub{% endblock %}
+{% block content %}
+<div class="auth-card card">
+  <h1>Create your account</h1>
+  <p class="muted">Free forever. Start organizing in under a minute.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% for field in form %}
+      <label>{{ field.label }}
+        {{ field }}
+        {% for error in field.errors %}<small class="error-text">{{ error }}</small>{% endfor %}
+      </label>
+    {% endfor %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+  </form>
+  <p class="muted center">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+</div>
+<script>
+(function(){
+  const form = document.querySelector('.auth-card form');
+  if (!form) return;
+  form.addEventListener('submit', function(){
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn && !btn.dataset.instant) {
+      btn.dataset.instant = "1";
+      btn.disabled = true;
+      btn.textContent = "Creating account ✓";
+      btn.style.opacity = "0.9";
+    }
+  });
+})();
+</script>
+{% endblock %}
