@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 
 import dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -84,16 +85,21 @@ WSGI_APPLICATION = "studyhub.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 #
-# Vercel functions have an ephemeral, read-only deployment filesystem.  SQLite
-# remains convenient for local development, while a provisioned Postgres
-# database is selected automatically in Vercel through DATABASE_URL.
-# Marketplace providers normally expose DATABASE_URL for the application and
-# DATABASE_URL_UNPOOLED for migrations. Accept the latter as a fallback so a
-# connected provider with only the direct URL still never falls back to SQLite
-# on Vercel.
-DATABASE_URL = os.environ.get("DATABASE_URL") or os.environ.get(
-    "DATABASE_URL_UNPOOLED"
+# Vercel functions run on a read-only filesystem, so SQLite can be read there
+# but never written to (registering, logging in, and uploads all fail with
+# "attempt to write a readonly database"). A connected Marketplace database
+# injects one of the URLs below; always use it on Vercel. SQLite is kept only
+# for local development, where it is writable.
+# Pooled URL is preferred at runtime; the unpooled/direct URL is used by the
+# build script for migrations.
+DATABASE_URL = (
+    os.environ.get("DATABASE_URL")
+    or os.environ.get("POSTGRES_URL")
+    or os.environ.get("DATABASE_URL_UNPOOLED")
+    or os.environ.get("POSTGRES_URL_NON_POOLING")
 )
+
+ON_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
 
 if DATABASE_URL:
     import dj_database_url
@@ -107,6 +113,15 @@ if DATABASE_URL:
     }
     # Neon and other Vercel Postgres providers commonly use transaction pooling.
     DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+elif ON_VERCEL:
+    # Fail fast with an actionable message instead of letting the first write
+    # produce a cryptic "readonly database" error at runtime.
+    raise ImproperlyConfigured(
+        "No database is configured for this Vercel deployment. Add a Postgres "
+        "integration (e.g. Neon) in the Vercel dashboard -> Storage, connect it "
+        "to this project so DATABASE_URL is injected, then redeploy. "
+        "SQLite cannot be used on Vercel because its filesystem is read-only."
+    )
 else:
     DATABASES = {
         "default": {

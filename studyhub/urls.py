@@ -29,6 +29,9 @@ urlpatterns = [
     # ── Admin ───────────────────────────────────────────────────────────────
     path("admin/", admin.site.urls),
 
+    # ── Deployment diagnostic (no secrets) ─────────────────────────────────
+    path("health/", account_views.health, name="health"),
+
     # ── Core pages ──────────────────────────────────────────────────────────
     path("", account_views.home, name="home"),  # "/" – hero for guests, redirect to dashboard for auth
     path("dashboard/", account_views.dashboard, name="dashboard"),

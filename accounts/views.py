@@ -1,3 +1,6 @@
+import os
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -47,6 +50,34 @@ def user_search(request):
             }
         )
     return JsonResponse({"results": results})
+
+
+def health(request):
+    """Deployment diagnostic: report which database the app is actually using.
+
+    Deliberately leaks no credentials — only the engine, host, and which env
+    vars were detected. Useful for confirming a Vercel deploy picked up the
+    connected database.
+    """
+    db = settings.DATABASES["default"]
+    return JsonResponse(
+        {
+            "ok": True,
+            "build": "2026-11-17-db-fix",
+            "database_engine": db.get("ENGINE"),
+            "database_host": db.get("HOST", ""),
+            "database_url_detected": bool(
+                os.environ.get("DATABASE_URL")
+                or os.environ.get("POSTGRES_URL")
+                or os.environ.get("DATABASE_URL_UNPOOLED")
+                or os.environ.get("POSTGRES_URL_NON_POOLING")
+            ),
+            "on_vercel": bool(
+                os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV")
+            ),
+            "gemini_key_configured": bool(settings.GEMINI_API_KEY),
+        }
+    )
 
 
 def home(request):
