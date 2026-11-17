@@ -63,9 +63,10 @@ def health(request):
     return JsonResponse(
         {
             "ok": True,
-            "build": "2026-11-17-db-fix",
+            "build": "2026-11-17-db-storage",
             "database_engine": db.get("ENGINE"),
             "database_host": db.get("HOST", ""),
+            "storage_backend": settings.STORAGES["default"]["BACKEND"],
             "database_url_detected": bool(
                 os.environ.get("DATABASE_URL")
                 or os.environ.get("POSTGRES_URL")

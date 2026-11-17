@@ -1438,10 +1438,10 @@ def protected_media(request, path):
     - materials/ and converted/ require owner or unlocked share
     - other paths denied
     """
+    import io
     import mimetypes
-    from pathlib import Path
 
-    from django.conf import settings
+    from django.core.files.storage import default_storage
 
     # Normalize path
     # Prevent directory traversal
@@ -1452,11 +1452,14 @@ def protected_media(request, path):
     # Actually avatars are shown in share lists (need to be visible to any logged-in user)
     if path.startswith("avatars/"):
         # Allow if user is authenticated or if fetching own avatar? For simplicity allow all
-        full_path = Path(settings.MEDIA_ROOT) / path
-        if not full_path.is_file():
+        if not default_storage.exists(path):
             raise Http404
-        ctype, _ = mimetypes.guess_type(str(full_path))
-        return FileResponse(open(full_path, "rb"), content_type=ctype or "application/octet-stream")
+        ctype, _ = mimetypes.guess_type(path)
+        with default_storage.open(path, "rb") as stored:
+            return FileResponse(
+                io.BytesIO(stored.read()),
+                content_type=ctype or "application/octet-stream",
+            )
 
     # For material files, enforce permission
     if path.startswith("materials/") or path.startswith("converted/"):
@@ -1489,12 +1492,15 @@ def protected_media(request, path):
             )
             if not has_access:
                 raise Http404
-        full_path = Path(settings.MEDIA_ROOT) / path
-        if not full_path.is_file():
+        if not default_storage.exists(path):
             raise Http404
-        ctype, _ = mimetypes.guess_type(str(full_path))
-        # Security: prevent XSS for SVG etc. but allow pdf/image
-        return FileResponse(open(full_path, "rb"), content_type=ctype or "application/octet-stream")
+        ctype, _ = mimetypes.guess_type(path)
+        with default_storage.open(path, "rb") as stored:
+            # Security: prevent XSS for SVG etc. but allow pdf/image
+            return FileResponse(
+                io.BytesIO(stored.read()),
+                content_type=ctype or "application/octet-stream",
+            )
 
     # For any other media path, deny (or serve only if authenticated and file exists - but be safe)
     raise Http404

@@ -217,3 +217,23 @@ class SharedAccess(models.Model):
         from django.contrib.auth.hashers import check_password
 
         return bool(raw_password) and check_password(raw_password, self.password)
+
+
+class StoredBlob(models.Model):
+    """Binary payload backing DatabaseStorage on read-only filesystems.
+
+    Used only on Vercel. Locally, Django's default FileSystemStorage keeps
+    writing files to MEDIA_ROOT exactly as before.
+    """
+
+    name = models.CharField(max_length=512, unique=True)
+    content = models.BinaryField()
+    size = models.PositiveBigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name

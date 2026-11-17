@@ -1,6 +1,9 @@
 import html
 import logging
+import os
 import re
+import shutil
+import tempfile
 import time
 import zipfile
 from pathlib import Path
@@ -118,11 +121,13 @@ def _extract_odp(path):
 
 
 def extract_file_text(file_field):
-    """Extract plain text from a Material's file (or its converted PDF)."""
+    """Extract plain text from a Material's file (or its converted PDF).
+
+    Bytes are copied to a temporary local file first, so extraction works with
+    both FileSystemStorage (local development) and DatabaseStorage (Vercel).
+    """
     field = file_field.converted_pdf or file_field.file
-    try:
-        path = field.path
-    except Exception:
+    if not field:
         return ""
     ext = Path(field.name).suffix.lower()
     extractors = {
@@ -136,11 +141,24 @@ def extract_file_text(file_field):
     extractor = extractors.get(ext)
     if not extractor:
         return ""
+    tmp_path = None
     try:
-        return extractor(path)[:PER_FILE_CHAR_LIMIT]
+        # delete=False so the file is closed before extractors reopen it
+        # (Windows does not allow reopening a still-open NamedTemporaryFile).
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
+            tmp_path = tmp.name
+            with field.open("rb") as src:
+                shutil.copyfileobj(src, tmp)
+        return extractor(tmp_path)[:PER_FILE_CHAR_LIMIT]
     except Exception:
         logger.exception("AI text extraction failed for %s", field.name)
         return ""
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 def build_context(topics):

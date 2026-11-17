@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -1373,3 +1374,73 @@ def json_dumps(payload):
     import json
 
     return json.dumps(payload)
+
+
+@override_settings(
+    STORAGES={
+        "default": {"BACKEND": "materials.storage.DatabaseStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    }
+)
+class DatabaseStorageTests(TestCase):
+    """Uploads must work when files are stored in Postgres (Vercel)."""
+
+    def _serve(self, material, user):
+        # The /media/ route is registered at URL-import time only when DEBUG is
+        # on, so call the view directly (Django's test runner forces DEBUG off).
+        from django.http import Http404
+        from django.test import RequestFactory
+
+        from .views import protected_media
+
+        request = RequestFactory().get(material.file.url)
+        request.user = user
+        try:
+            return protected_media(request, material.file.name)
+        except Http404:
+            return SimpleNamespace(status_code=404)
+
+    def test_upload_and_serve_file_from_database(self):
+        from .models import StoredBlob
+
+        user = User.objects.create_user("dbstorage", password="test12345")
+        subject = Subject.objects.create(owner=user, name="DB", class_level="G1")
+        topic = Topic.objects.create(subject=subject, name="T")
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse("material-list"),
+            {
+                "file": SimpleUploadedFile("db.txt", b"hello from db"),
+                "topic": topic.pk,
+            },
+        )
+        self.assertEqual(response.status_code, 201, response.content[:300])
+
+        material = Material.objects.get()
+        self.assertTrue(StoredBlob.objects.filter(name=material.file.name).exists())
+
+        served = self._serve(material, user)
+        self.assertEqual(served.status_code, 200)
+        self.assertEqual(b"".join(served.streaming_content), b"hello from db")
+
+    def test_serving_requires_permission(self):
+        from .models import StoredBlob
+
+        owner = User.objects.create_user("dbowner", password="test12345")
+        subject = Subject.objects.create(owner=owner, name="DB", class_level="G1")
+        topic = Topic.objects.create(subject=subject, name="T")
+        material = Material.objects.create(
+            topic=topic,
+            owner=owner,
+            title="Secret",
+            file=SimpleUploadedFile("secret.txt", b"secret"),
+            file_type="doc",
+        )
+        self.assertTrue(StoredBlob.objects.filter(name=material.file.name).exists())
+
+        stranger = User.objects.create_user("dbstranger", password="test12345")
+        self.assertEqual(self._serve(material, stranger).status_code, 404)
+        self.assertEqual(self._serve(material, owner).status_code, 200)

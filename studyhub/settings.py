@@ -176,6 +176,16 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Vercel's filesystem is read-only, so uploads must live in Postgres.
+# Local development keeps Django's default FileSystemStorage (MEDIA_ROOT).
+if ON_VERCEL:
+    STORAGES = {
+        "default": {"BACKEND": "materials.storage.DatabaseStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    }
+
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "home"
